@@ -1,0 +1,10 @@
+# Install PyTorch FIRST, as the CPU-only build (smaller download, no CUDA needed):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Any torch >= 2.2 that still contains torch.ao.quantization works.
+torch>=2.2
+transformers>=4.40
+datasets>=2.18
+numpy
+pandas
+matplotlib
+psutil

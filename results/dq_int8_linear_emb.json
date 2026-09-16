@@ -1,0 +1,97 @@
+{
+  "method": "dq_int8_linear_emb",
+  "description": "Per-channel dynamic INT8 on all nn.Linear + 8-bit weight-only nn.Embedding (row-wise scales)",
+  "settings": {
+    "device": "cpu",
+    "threads": 1,
+    "quantized_engine": "onednn",
+    "attn_implementation": "sdpa",
+    "batch_size": 32,
+    "max_length": 128,
+    "warmup_iters": 20,
+    "batched_repeats": 3,
+    "limit": null
+  },
+  "data": {
+    "n_sentences": 872,
+    "mean_tokens": 25.163990825688074,
+    "min_tokens": 4,
+    "max_tokens": 55,
+    "n_at_max_length": 0
+  },
+  "layers": {
+    "quantized_linear": 38,
+    "float_linear": 0,
+    "quantized_embedding": 2,
+    "float_embedding": 0
+  },
+  "quantization_time_s": 1.2731524999835528,
+  "params": {
+    "total": 66955010,
+    "by_storage_dtype": {
+      "float32": 62210,
+      "quint8": 23834112,
+      "qint8": 43058688
+    },
+    "raw_weight_bytes_mb": 67.14164
+  },
+  "macs": {
+    "per_sentence_dev_mean": 1076065426.7889907,
+    "per_sentence_128_tokens": 5587404288,
+    "linear_share_dev": 0.9936559483879384,
+    "quantized_share_dev": 0.9936559483879384,
+    "quantized_share_ref": 0.9729758334609346
+  },
+  "memory": {
+    "serialized_size_mb": 68.157111,
+    "rss_model_mb": 217.563136,
+    "rss_peak_process_mb": 739.274752,
+    "rss_peak_inference_extra_mb": 114.71257600000001
+  },
+  "accuracy": {
+    "accuracy": 0.9013761467889908,
+    "macro_f1": 0.9010241790729596,
+    "n_correct": 786,
+    "n_samples": 872
+  },
+  "latency_bs1": {
+    "mean_ms": 15.588198050588515,
+    "std_ms": 3.5325419289642235,
+    "median_ms": 14.997249993029982,
+    "p95_ms": 22.040254983585314,
+    "min_ms": 8.772400033194572,
+    "n_runs": 872
+  },
+  "latency_batched": {
+    "batch_size": 32,
+    "ms_per_batch_mean": 578.8971952417688,
+    "ms_per_batch_median": 588.8727500278037,
+    "ms_per_sample": 18.58844204904762,
+    "throughput_samples_per_s": 53.796869977666304,
+    "repeats": 3
+  },
+  "environment": {
+    "python": "3.12.2",
+    "os": "Windows-11-10.0.26200-SP0",
+    "torch": "2.14.0+cpu",
+    "transformers": "5.17.0",
+    "datasets": "5.0.1",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "cpu_model": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+    "cpu_logical_cores": 8,
+    "cpu_physical_cores": 4,
+    "ram_total_gb": 16.86,
+    "torch_num_threads": 1,
+    "quantized_engine": "onednn",
+    "supported_quantized_engines": [
+      "onednn"
+    ],
+    "fbgemm_available": false,
+    "cpu_flags": {
+      "torch_cpu_capability": "AVX512"
+    },
+    "cuda_available": false,
+    "torch_cpu_capability": "AVX512"
+  }
+}

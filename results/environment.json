@@ -1,0 +1,24 @@
+{
+  "python": "3.12.2",
+  "os": "Windows-11-10.0.26200-SP0",
+  "torch": "2.14.0+cpu",
+  "transformers": "5.17.0",
+  "datasets": "5.0.1",
+  "numpy": "2.5.3",
+  "psutil": "7.2.2",
+  "cpu_model": "11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz",
+  "cpu_logical_cores": 8,
+  "cpu_physical_cores": 4,
+  "ram_total_gb": 16.86,
+  "torch_num_threads": 1,
+  "quantized_engine": "onednn",
+  "supported_quantized_engines": [
+    "onednn"
+  ],
+  "fbgemm_available": false,
+  "cpu_flags": {
+    "torch_cpu_capability": "AVX512"
+  },
+  "cuda_available": false,
+  "torch_cpu_capability": "AVX512"
+}
