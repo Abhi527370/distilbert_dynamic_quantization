@@ -10,6 +10,10 @@ tables generated automatically.
 - **Dataset:** [SST-2](https://huggingface.co/datasets/stanfordnlp/sst2), validation split (872 sentences). The GLUE test labels are withheld, so accuracy is computed on the validation split.
 - **Stack:** PyTorch (`torch.ao.quantization.quantize_dynamic`), Hugging Face `transformers` and `datasets`.
 
+**Headline result (SST-2, CPU):** INT8 dynamic quantization makes DistilBERT roughly
+**3× faster** and **2–4× smaller** while keeping about **99% of FP32 accuracy** — an
+accuracy change an exact McNemar test cannot distinguish from noise.
+
 Everything runs on the CPU — PyTorch dynamic quantization has no GPU kernels, so the
 FP32 baseline is measured on the CPU too for a fair comparison. No GPU is required and
 the whole run stays under ~2 GB of RAM.
@@ -70,6 +74,50 @@ latency reflects only the forward pass.
 - **Latency** — batch size 1 (per-sentence, after warm-up: mean, std, median, p95) and batch size 32 (throughput).
 - **Memory** — theoretical weight bytes, serialized `state_dict` size, and peak process RSS during inference.
 - **Accuracy** — accuracy and macro-F1, plus per-model agreement with the baseline and an exact McNemar test to check whether accuracy differences are statistically significant.
+
+## Results
+
+Measured on the full 872-sentence SST-2 validation split. **Q1** = per-tensor INT8 on
+linear layers; **Q2** = per-channel INT8 on linear layers plus 8-bit embeddings. The
+model checkpoint has 66,955,010 parameters (23.83M in the two embedding tables, 42.47M
+in the six encoder blocks, 0.59M in the head) across 38 `nn.Linear` and 2 `nn.Embedding`
+modules.
+
+**Table 1 — Model cost.** Quantization changes how parameters are stored, not how many
+exist, and it does not change the MAC count.
+
+| Model | Params (M) | Stored as FP32 / INT8 (M) | GMACs / sentence | GMACs at L=128 |
+|---|---|---|---|---|
+| FP32 baseline | 66.96 | 66.96 / 0.00 | 1.076 | 5.587 |
+| Q1 (per-tensor INT8) | 66.96 | 23.90 / 43.06 | 1.076 | 5.587 |
+| Q2 (per-channel INT8 + 8-bit emb.) | 66.96 | 0.06 / 66.89 | 1.076 | 5.587 |
+
+**Table 2 — Memory, latency and accuracy** (CPU, 1 thread, oneDNN). A McNemar p greater
+than 0.05 means the accuracy difference from FP32 is not statistically significant.
+
+| Model | Disk MB (factor) | Peak RAM (MB) | bs=1 median ms (speedup) | bs=32 per-sentence ms (speedup) | Accuracy % (change) | McNemar p |
+|---|---|---|---|---|---|---|
+| FP32 | 267.9 (1.00×) | 774 | 42.24 (1.00×) | 51.79 (1.00×) | 91.06 (ref.) | — |
+| Q1 | 138.7 (1.93×) | 828 | 13.63 (3.10×) | 17.53 (2.95×) | 90.02 (−1.03) | 0.188 |
+| Q2 | 68.2 (3.93×) | 739 | 15.00 (2.82×) | 18.59 (2.79×) | 90.14 (−0.92) | 0.229 |
+
+### What stands out
+
+- **Accuracy is effectively unchanged.** The −1.03 (Q1) and −0.92 (Q2) percentage-point drops are not statistically significant (McNemar p = 0.188 and 0.229). Throughput rises from 19.3 to 57.0 sentences/second with Q1.
+- **Size and latency are decoupled.** Q1 is the latency pick (3.10× faster at bs=1); Q2 is the size pick (3.93× smaller) but ~10% slower at bs=1, because 8-bit embeddings add a per-token dequantization step with no MAC saving — embeddings hold 36% of parameters but perform 0% of the MACs.
+- **MAC count is identical across all models;** quantization changes the precision of the arithmetic, not the amount. The ~3× speedup exceeds the PyTorch tutorial's ~2× because AVX512-VNNI performs four INT8 multiply-accumulates per slot and ~99% of MACs sit inside the quantized linear layers.
+- **The speedup is sequence-length-dependent.** Attention score products stay FP32, so on long inputs their share grows and the quantization benefit shrinks.
+- **Batched inference is slower per sentence than single-sentence here,** due to padding at a single thread; the INT8 speedup holds in both regimes (2.95× batched, 3.10× single).
+- **Peak process RSS of the INT8 model can exceed FP32** because `quantize_dynamic(inplace=False)` builds the INT8 copy while the FP32 model is still resident. The memory benefit is realized when a quantized checkpoint is loaded, not when a float model is converted at runtime; disk size and the theoretical byte count agree to within 1.5%.
+
+### Environment
+
+Intel Core i7-1165G7 (4C/8T, 2.80 GHz), 16.86 GB RAM, Windows 11; Python 3.12.2,
+torch 2.14.0+cpu, transformers 5.17.0, datasets 5.0.1, oneDNN backend, SDPA attention,
+1 thread, max length 128, 20 warm-up iterations. Latency is hardware-specific — only the
+ratios between models transfer. FP16 dynamic quantization was not evaluated on this build
+because `quantized::linear_prepack_fp16` is implemented only in FBGEMM, which this
+PyTorch build does not ship; INT8 is unaffected and runs through oneDNN.
 
 ## Project structure
 
